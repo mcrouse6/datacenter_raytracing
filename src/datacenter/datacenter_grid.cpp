@@ -191,16 +191,13 @@ int main( int argc, char** argv )
     scene->setGeometryList(gL);
 
 
-    // add transmitters/receivers
-    // add Tx 2B from the Wireless InSite project
-    remcom::rxapi::PointSetHandle tx_node;
-    tx_node = createNode(0.292000, -0.533000, ANTENNA_HEIGHT, 100);
+    // remcom::rxapi::PointSetHandle tx_node;
+    // tx_node = createNode(0.292000, -0.533000, ANTENNA_HEIGHT, 100);
 
-    //figure out how to set alignment between antennas
-    setAntennaType(tx_node, TX_T);
-    setTxAngle(tx_node, 0,-90.0,0);
+    // setAntennaType(tx_node, TX_T);
+    // setTxAngle(tx_node, 0,-90.0,0);
 
-    scene->getTxRxSetList( )->addTxRxSet( tx_node );
+    // scene->getTxRxSetList( )->addTxRxSet( tx_node );
 
     vector<remcom::rxapi::PointSetHandle> node_list;
 
@@ -213,15 +210,27 @@ int main( int argc, char** argv )
                               ((j*num_racks_per_row)+i));
 
             cout << (j*num_racks_per_row)+i << endl;;
-
             setAntennaType(node,  RX_T);
             setRxAngle(node, 0, 0, 0.0);
-            pointRxAtTx(node, tx_node);
-            scene->getTxRxSetList( )->addTxRxSet( node );
+            // pointRxAtTx(node, tx_node);
             node_list.push_back(node);
         }
     }
-    // return 0;
+
+
+    int tx_id = 3;
+    int target_rx_id = 0;
+    remcom::rxapi::PointSetHandle tx_node = node_list[tx_id];
+    setAntennaType(tx_node, TX_T);
+    pointTxAtRx(tx_node, node_list[target_rx_id]);
+    for(int i = 0; i < node_list.size(); i++) {
+        if(i != tx_id) {
+            pointRxAtTx(node_list[i], tx_node);
+        }
+        scene->getTxRxSetList( )->addTxRxSet( node_list[i] );
+    }
+
+
 
 
     // create an x3d study area
