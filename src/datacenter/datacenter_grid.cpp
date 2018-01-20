@@ -191,14 +191,6 @@ int main( int argc, char** argv )
     scene->setGeometryList(gL);
 
 
-    // remcom::rxapi::PointSetHandle tx_node;
-    // tx_node = createNode(0.292000, -0.533000, ANTENNA_HEIGHT, 100);
-
-    // setAntennaType(tx_node, TX_T);
-    // setTxAngle(tx_node, 0,-90.0,0);
-
-    // scene->getTxRxSetList( )->addTxRxSet( tx_node );
-
     vector<remcom::rxapi::PointSetHandle> node_list;
 
     for(int j = 0; j< num_rows; j++) {
