@@ -46,6 +46,9 @@ static const double originLat = 0;
 #define RACK_Y_SPACING 2.4384
 #define ANTENNA_HEIGHT 2.3
 
+#define TX_T 1
+#define RX_T 2
+
 using namespace std;
 
 void printPoint(remcom::rxapi::CartesianPointHandle p)
@@ -82,14 +85,14 @@ remcom::rxapi::PointSetHandle createNode(double x, double y, double z, int id)
 
 
 
-void setAntennaType(remcom::rxapi::PointSetHandle node, double angle, int type)
+void setAntennaType(remcom::rxapi::PointSetHandle node, int type)
 {
 
     // remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
     remcom::rxapi::HornHandle horn = createHornAntenna();
 
     // create the receiver properties
-    if(type == 0)
+    if(type == RX_T)
     {
         remcom::rxapi::ReceiverHandle properties = remcom::rxapi::Receiver::New( );
         properties->setAntenna( horn );
@@ -99,13 +102,18 @@ void setAntennaType(remcom::rxapi::PointSetHandle node, double angle, int type)
         node->setReceiver( properties );
 
     }
-    else
+    else if(type == TX_T)
     {
         remcom::rxapi::TransmitterHandle properties = remcom::rxapi::Transmitter::New( );
         properties->setAntenna( horn );
         properties->setInputPower(0.0);
 
         node->setTransmitter( properties );
+    }
+    else
+    {
+        cout << "antenna type unknown " << type << endl;
+        exit(5);
     }
     
 }
@@ -189,7 +197,7 @@ int main( int argc, char** argv )
     tx_node = createNode(0.292000, -0.533000, ANTENNA_HEIGHT, 100);
 
     //figure out how to set alignment between antennas
-    setAntennaType(tx_node, 0, 1);
+    setAntennaType(tx_node, TX_T);
     setTxAngle(tx_node, 0,-90.0,0);
 
     scene->getTxRxSetList( )->addTxRxSet( tx_node );
@@ -206,10 +214,9 @@ int main( int argc, char** argv )
 
             cout << (j*num_racks_per_row)+i << endl;;
 
-            setAntennaType(node, 0.0, 0);
+            setAntennaType(node,  RX_T);
             setRxAngle(node, 0, 0, 0.0);
             pointRxAtTx(node, tx_node);
-            // return 0;
             scene->getTxRxSetList( )->addTxRxSet( node );
             node_list.push_back(node);
         }
