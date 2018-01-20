@@ -1,0 +1,41 @@
+Format type:keyword version: 1.1.0
+begin_<terrain> Flat Terrain
+begin_<reference> 
+cartesian
+longitude -77.0787000000
+latitude 38.8907000000
+visible no
+sealevel
+end_<reference>
+begin_<Material> Dry Earth
+Material 0
+DielectricHalfspace
+begin_<Color> 
+ambient 0.000000 0.501961 0.000000 1.000000
+diffuse 0.000000 0.501961 0.000000 1.000000
+specular 0.000000 0.501961 0.000000 1.000000
+emission 0.000000 0.000000 0.000000 0.000000
+shininess 50.000000
+end_<Color>
+begin_<DielectricLayer> 
+conductivity 2.000e-003
+permittivity 10.000000
+roughness 0.000e+000
+thickness 0.000e+000
+end_<DielectricLayer>
+end_<Material>
+begin_<structure_group> 
+begin_<structure> 
+begin_<sub_structure> 
+begin_<face> 
+Material 0
+nVertices 4
+276.1468505859 194.6440734863 0.0000000000
+955.9906005859 194.6440734863 0.0000000000
+955.9906005859 890.7807006836 0.0000000000
+276.1468505859 890.7807006836 0.0000000000
+end_<face>
+end_<sub_structure>
+end_<structure>
+end_<structure_group>
+end_<terrain>
