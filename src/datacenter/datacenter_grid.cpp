@@ -147,10 +147,11 @@ double calculateAngle(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::Point
 {
     remcom::rxapi::CartesianPointHandle x_pos = getPosition(x_node);
     remcom::rxapi::CartesianPointHandle y_pos = getPosition(y_node);
-    double dx = x_pos->getX()->getValue() - x_pos->getX()->getValue();
-    double dy = y_pos->getY()->getValue() - y_pos->getY()->getValue();
+    double dx = y_pos->getX()->getValue() - x_pos->getX()->getValue();
+    double dy = y_pos->getY()->getValue() - x_pos->getY()->getValue();
 
     double dz = atan2(dy, dx) * 180.0 / PI;
+    printf("dx: %f, dy: %f, dz: %f\n" , dx, dy, dz);// + 90.0);
     return dz;
 }
 
@@ -158,20 +159,22 @@ double calculateAngle(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::Point
 void pointRxAtTx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHandle y_node)
 {
     double dz =  calculateAngle(x_node, y_node);
-    setRxAngle(x_node, 0, dz + 90.0, 0 );
+    setRxAngle(x_node, 0,0, dz);// + 90.0);
+    // setRxAngle(x_node, 0, dz + 90.0, 0);
 }
 
 // Apparently, WI needs to rotate around y instead of z axis for this to work
 void pointTxAtRx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHandle y_node)
 {
     double dz =  calculateAngle(x_node, y_node);
-    setTxAngle(x_node, 0, dz + 90.0, 0 ); 
+    setTxAngle(x_node, 0, 0, dz);// + 90.0);
+    // setTxAngle(x_node, 0, dz + 90.0, 0);
 }
 
 int main( int argc, char** argv )
 {
-    static const int num_racks_per_row = 4;
-    static const int num_rows = 4;
+    static const int num_racks_per_row = 8;
+    static const int num_rows = 2;
 
     // a progress reporter must be instantiated and registered with the rxapi to provide error, warning, and progress messages
     remcom::rxapi::ProgressReporter progressReporter( NULL );
@@ -210,20 +213,20 @@ int main( int argc, char** argv )
     }
 
 
-    int tx_id = 3;
-    int target_rx_id = 0;
+    int tx_id = 11;
+    int target_rx_id = 3;
     remcom::rxapi::PointSetHandle tx_node = node_list[tx_id];
     setAntennaType(tx_node, TX_T);
     pointTxAtRx(tx_node, node_list[target_rx_id]);
     for(int i = 0; i < node_list.size(); i++) {
+        printf("Node: %d\n", i);
         if(i != tx_id) {
             pointRxAtTx(node_list[i], tx_node);
         }
         scene->getTxRxSetList( )->addTxRxSet( node_list[i] );
+        printPoint(getPosition(node_list[i]));
+        printf("-------------------------------------\n");
     }
-
-
-
 
     // create an x3d study area
     remcom::rxapi::X3DHandle x3d = remcom::rxapi::X3D::New( );
