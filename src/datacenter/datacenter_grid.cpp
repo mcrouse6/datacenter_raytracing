@@ -171,6 +171,59 @@ void pointTxAtRx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHa
     // setTxAngle(x_node, 0, dz + 90.0, 0);
 }
 
+//remcom::rxapi::PathResultsDatabaseHandle 
+void executeJob(remcom::rxapi::X3DHandle &x3d, 
+                remcom::rxapi::JobHandle &job, 
+                remcom::rxapi::PathResultsDatabaseHandle &database, 
+                remcom::rxapi::SceneHandle scene, 
+                remcom::rxapi::ProgressReporter &progressReporter, 
+                std::string output_sql)
+{
+    // create an x3d study area
+    x3d->setUseGPU(false);
+
+    // set the model parameters to something reasonably balanced between fidelity and speed
+    x3d->setReflections( 8 );
+    x3d->setTransmissions( 0 );
+    x3d->setDiffractions( 1 );
+    x3d->setCPUThreads( 16 );
+
+    // now that we have a full scene and a model to run, create a job and hook everything together
+    // remcom::rxapi::JobHandle job = remcom::rxapi::Job::New( );
+    job->setScene( scene );
+    job->setModel( x3d );
+
+    // // the x3d model uses an SQLite database to store its paths
+    job->setPathResultsDatabase( database );
+    remcom::rxapi::FileDescriptionHandle databaseFilename = remcom::rxapi::FileDescription::New( );
+    databaseFilename->setFilename( std::string(RESULTS_DIR) + output_sql);
+    database->setFilename( databaseFilename );
+
+    // all requirements for running an x3d calculation should now be met, so check that the job is valid and then run
+    if( !job->isValid( ) )
+    {
+        progressReporter.reportError( job->getReasonWhyInvalid( ) );
+    }
+    printf("Valid and running!!!!!!!!!!!!!!!!!\n");
+
+    // at this point, the job is ready to run; it may be beneficial to serialize it to XML for viewing
+    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets.xml", false );
+
+    // job->execute( &progressReporter );
+    job->execute( &progressReporter );
+    // printf("DONE!!!!!!!!!\n");
+
+    // // once the job has finished, it will be updated with output, which can also be serialized
+    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets_out.xml", false );
+
+    if( !(job->getOutput( )->isValid( )) )
+    {
+        progressReporter.reportError( job->getOutput( )->getReasonWhyInvalid( ) );
+    }
+
+
+}
+
 int main( int argc, char** argv )
 {
     static const int num_racks_per_row = 8;
@@ -230,54 +283,19 @@ int main( int argc, char** argv )
 
     // create an x3d study area
     remcom::rxapi::X3DHandle x3d = remcom::rxapi::X3D::New( );
-    x3d->setUseGPU(false);
-    
-
-    // set the model parameters to something reasonably balanced between fidelity and speed
-    x3d->setReflections( 8 );
-    x3d->setTransmissions( 0 );
-    x3d->setDiffractions( 1 );
-    x3d->setCPUThreads( 16 );
 
     // now that we have a full scene and a model to run, create a job and hook everything together
     remcom::rxapi::JobHandle job = remcom::rxapi::Job::New( );
-    job->setScene( scene );
-    job->setModel( x3d );
 
     // the x3d model uses an SQLite database to store its paths
     remcom::rxapi::PathResultsDatabaseHandle database = remcom::rxapi::PathResultsDatabase::New( );
-    job->setPathResultsDatabase( database );
-    remcom::rxapi::FileDescriptionHandle databaseFilename = remcom::rxapi::FileDescription::New( );
-    databaseFilename->setFilename( std::string(RESULTS_DIR) + "rosslyn_streets.sql" );
-    database->setFilename( databaseFilename );
+  
+    executeJob(x3d, job, database, scene, progressReporter, "output.sql");
 
-    // all requirements for running an x3d calculation should now be met, so check that the job is valid and then run
-    if( !job->isValid( ) )
-    {
-        progressReporter.reportError( job->getReasonWhyInvalid( ) );
-        return 1;
-    }
-
-    // at this point, the job is ready to run; it may be beneficial to serialize it to XML for viewing
-    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets.xml", false );
-
-    job->execute( &progressReporter );
-
-    // once the job has finished, it will be updated with output, which can also be serialized
-    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets_out.xml", false );
-
-    if( !(job->getOutput( )->isValid( )) )
-    {
-        progressReporter.reportError( job->getOutput( )->getReasonWhyInvalid( ) );
-        return 1;
-    }
-
-    // write output to the console
-    //writeAllChannelsToConsole( database, tx_node->getOutputID( )->getValue( ), node->getOutputID( )->getValue( ) );
+    //write output to the console
     for(int i = 0; i < node_list.size(); i++) {
-        writeAllChannelsToConsole( database, tx_node->getOutputID( )->getValue( ), node_list[i]->getOutputID( )->getValue( ) );
+        writeAllChannelsToConsole( database, node_list[tx_id]->getOutputID( )->getValue( ), node_list[i]->getOutputID( )->getValue( ) );
     }
-    //writeAllChannelsToConsole( database, row->getOutputID( )->getValue( ), tx2b->getOutputID( )->getValue( ) );
 
     return 0;
 }
