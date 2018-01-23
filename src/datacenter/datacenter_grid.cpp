@@ -224,6 +224,55 @@ void executeJob(remcom::rxapi::X3DHandle &x3d,
 
 }
 
+void createAntennas(remcom::rxapi::SceneHandle &scene,
+                 vector<remcom::rxapi::PointSetHandle> &node_list,
+                 int num_rows,
+                 int num_racks_per_row)
+{
+      for(int j = 0; j< num_rows; j++) {
+        for(int i = 0; i < num_racks_per_row; i++) {
+            remcom::rxapi::PointSetHandle node;
+            node = createNode((RACK_X_SPACING*i)+RACK_CENTER_X, 
+                              ((RACK_Y_SPACING*j)+RACK_CENTER_Y)*-1.0,  
+                              ANTENNA_HEIGHT, 
+                              ((j*num_racks_per_row)+i));
+
+            cout << (j*num_racks_per_row)+i << endl;;
+            setAntennaType(node,  RX_T);
+            setRxAngle(node, 0, 0, 0.0);
+            node_list.push_back(node);
+        }
+    }
+}
+
+
+void aimAntennas(int tx_id,
+                 int target_rx_id,
+                 vector<remcom::rxapi::PointSetHandle> &node_list)
+{
+    remcom::rxapi::PointSetHandle tx_node = node_list[tx_id];
+    setAntennaType(tx_node, TX_T);
+    pointTxAtRx(tx_node, node_list[target_rx_id]);
+    for(int i = 0; i < node_list.size(); i++) {
+        printf("Node: %d\n", i);
+        if(i != tx_id) {
+            pointRxAtTx(node_list[i], tx_node);
+        }
+        printPoint(getPosition(node_list[i]));
+        printf("-------------------------------------\n");
+    }
+
+}
+
+void addNodesToScene(vector<remcom::rxapi::PointSetHandle> &node_list,
+                     remcom::rxapi::SceneHandle &scene  )
+{
+   for(int i = 0; i < node_list.size(); i++) { 
+       scene->getTxRxSetList( )->addTxRxSet( node_list[i] );
+   }
+
+}
+
 int main( int argc, char** argv )
 {
     static const int num_racks_per_row = 8;
@@ -246,40 +295,16 @@ int main( int argc, char** argv )
     remcom::rxapi::COLLADAHandle shape = addColladaFile(gL, remcom::rxapi::RString( std::string( DATA_DIR ) + "DataCenter_FS_6x64.dae" )) ;
     scene->setGeometryList(gL);
 
+    int tx_id = 11;
+    int target_rx_id = 3;
 
     vector<remcom::rxapi::PointSetHandle> node_list;
 
-    for(int j = 0; j< num_rows; j++) {
-        for(int i = 0; i < num_racks_per_row; i++) {
-            remcom::rxapi::PointSetHandle node;
-            node = createNode((RACK_X_SPACING*i)+RACK_CENTER_X, 
-                              ((RACK_Y_SPACING*j)+RACK_CENTER_Y)*-1.0,  
-                              ANTENNA_HEIGHT, 
-                              ((j*num_racks_per_row)+i));
+    createAntennas(scene, node_list, num_rows, num_racks_per_row);
 
-            cout << (j*num_racks_per_row)+i << endl;;
-            setAntennaType(node,  RX_T);
-            setRxAngle(node, 0, 0, 0.0);
-            // pointRxAtTx(node, tx_node);
-            node_list.push_back(node);
-        }
-    }
+    aimAntennas(tx_id, target_rx_id, node_list);
 
-
-    int tx_id = 11;
-    int target_rx_id = 3;
-    remcom::rxapi::PointSetHandle tx_node = node_list[tx_id];
-    setAntennaType(tx_node, TX_T);
-    pointTxAtRx(tx_node, node_list[target_rx_id]);
-    for(int i = 0; i < node_list.size(); i++) {
-        printf("Node: %d\n", i);
-        if(i != tx_id) {
-            pointRxAtTx(node_list[i], tx_node);
-        }
-        scene->getTxRxSetList( )->addTxRxSet( node_list[i] );
-        printPoint(getPosition(node_list[i]));
-        printf("-------------------------------------\n");
-    }
+    addNodesToScene(node_list, scene);
 
     // create an x3d study area
     remcom::rxapi::X3DHandle x3d = remcom::rxapi::X3D::New( );
