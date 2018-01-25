@@ -2,3 +2,6 @@
 *.DS_Store
 settings.json
 *._*
+*.sql
+*.xml
+*.jpg
