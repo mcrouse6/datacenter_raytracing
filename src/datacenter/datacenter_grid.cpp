@@ -35,7 +35,7 @@
     #define DATA_DIR "../../data/"
 #endif
 // #define RESULTS_DIR "../../results/4racks_2rows-2.7-directional/"
-#define RESULTS_DIR "../../results/8racks_3rows-2.7-directional/"
+#define RESULTS_DIR "../../results/8racks_4rows-2.7-horn/"
 
 static const double originLon = 0;
 static const double originLat = 0;
@@ -94,9 +94,9 @@ void setAntennaType(remcom::rxapi::PointSetHandle node, int type)
 
     // remcom::rxapi::IsotropicHandle horn = createIsotropicAntenna();
     // remcom::rxapi::ShortDipoleHandle horn = createAntenna();
-    // remcom::rxapi::HornHandle horn = createHornAntenna();
-    remcom::rxapi::DirectionalHandle horn = createDirectionalAntenna();
-    remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
+    remcom::rxapi::HornHandle horn = createHornAntenna();
+    // remcom::rxapi::DirectionalHandle horn = createDirectionalAntenna();
+    // remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
 
     // create the receiver properties
     if(type == RX_T)
@@ -321,7 +321,7 @@ void addNodesToScene(vector<remcom::rxapi::PointSetHandle> &node_list,
 int main( int argc, char** argv )
 {
     static const int num_racks_per_row = 8;
-    static const int num_rows = 3;
+    static const int num_rows = 4;
     char buffer [50];
 
     // a progress reporter must be instantiated and registered with the rxapi to provide error, warning, and progress messages

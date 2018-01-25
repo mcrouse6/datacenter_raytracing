@@ -28,8 +28,18 @@ def retreiveAllData(db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/resu
 
 
 
-    return c.fetchall()
-    #r = [wattsToDB(v[3]) for v in c.fetchall()]
+    # d = dict()
+    # for r in c.fetchall():
+    #     # print r[1], wattsToDB(r[3])
+    #     d[r[1]] = wattsToDB(r[3]) 
+    return np.array([[d[1], d[-3], d[0-2], wattsToDB(d[3])] for d in c.fetchall()])
+
+def getRxPositions(db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/results/rosslyn_streets.sql'):
+    conn = sqlite3.connect(db_fn)
+    c = conn.cursor()
+    c.execute("SELECT * FROM rx;")
+    return [[r[2], r[3]] for r in c.fetchall()]
+
 
 def fetchTx(tx_id, db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/results/rosslyn_streets.sql'):
     conn = sqlite3.connect(db_fn)
@@ -78,13 +88,13 @@ def plotAllTx(numTx, db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/res
 
 def plotTx(db_fn='../results/output.sql', num_racks_per_row=8, num_racks=4, fig=None, ax=None):
 
-    r = retreiveAllData(db_fn=db_fn)
-    print r
+
+    rxs = getRxPositions(db_fn=db_fn)
+    pwr_data = retreiveAllData(db_fn=db_fn)
 
     tx_id = int(db_fn.split("_")[2]) + 1
     target_rx_id = int(db_fn.split("_")[3].split(".")[0]) + 1
     # print tx_id, target_rx_id
-    print len(r)
 
     if fig is None:
         fig = plt.figure()
@@ -92,41 +102,32 @@ def plotTx(db_fn='../results/output.sql', num_racks_per_row=8, num_racks=4, fig=
 
     xs = []
     ys = []
-    rcv_dbs = []
     legend = []
-    for row in r:
-        print row[1]
-        xs.append(row[-3])
-        ys.append(row[-2])
-        db = wattsToDB(row[3])
-        print row[1], xs[-1], ys[-1], db
-        rcv_dbs.append(wattsToDB(row[3]))
-        m = 's'
-        # cax =ax.scatter(row[-3], row[-2], c=db, marker='s', cmap=cm.jet)
-        if row[1] == target_rx_id:
-            target_x = row[-3]
-            target_y = row[-2]
+    for i, rx in enumerate(rxs):
+        print rx
+        if i+1 == target_rx_id:
             # print "here: ", db
-            ax.plot(row[-3], row[-2], c='r', markersize=15, marker='o', zorder=1, mfc='none', linestyle = 'None')
+            # ax.plot(rx[0], rx[1], c='r', markersize=15, marker='s', zorder=1, mfc='none', linestyle = 'None', mew=2)
+            c = 'g'
             legend.append('Target Rx')
-        if row[1] == tx_id:
-            target_x = row[-3]
-            target_y = row[-2]
-            print 'here'
-            ax.plot(row[-3], row[-2], c='b', markersize=15, marker='o', zorder=1, mfc='none', linestyle = 'None')
+        elif i+1 == tx_id:
+            c = 'b'
+            # ax.plot(rx[0], rx[1], c='b', markersize=15, marker='s', zorder=1, mfc='none', linestyle = 'None', mew=2)
             legend.append('Tx')
+        else:
+            c = 'k'
+        ax.plot(rx[0], rx[1], c=c, markersize=15, marker='s', zorder=1, mfc='none', linestyle = 'None', mew=2)
 
     
-    cax = ax.scatter(xs, ys, c=rcv_dbs, cmap=cm.jet, marker='s', zorder=2, vmin=-250, vmax=0)
-    ax.grid(True)
+    cax = ax.scatter(pwr_data[:,1], pwr_data[:,2], c=pwr_data[:,3], cmap=cm.jet, marker='s', zorder=2, vmin=-250, vmax=0)
+    # ax.grid(True)
     cbar = fig.colorbar(cax)
     cbar.set_label("Received Power (dBm)")
     plt.xlabel('position (m)')
     plt.ylabel('position (m)')
     plt.title("Tx: %d - Target Rx: %d" % (tx_id, target_rx_id))
-    plt.legend(legend)
-    plt.xlim([0,5])
-    plt.ylim([-6,0])
-    # plt.axis('equal')
+    # plt.legend(legend)
+    # plt.xlim([0,5])
+    # plt.ylim([-9,0])
     plt.show()
  
