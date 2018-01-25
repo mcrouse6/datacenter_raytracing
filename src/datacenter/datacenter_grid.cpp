@@ -26,6 +26,7 @@
 #include <rxapischema/Terrain.h>
 #include <rxapischema/TxRxSetList.h>
 #include <rxapischema/X3D.h>
+#include <rxapischema/Directional.h>
 
 #ifdef _WIN32
     #define DATA_DIR "..\\..\\..\\..\\data\\"
@@ -33,7 +34,8 @@
     // for Linux distributions, please configure DATA_DIR as necessary
     #define DATA_DIR "../../data/"
 #endif
-#define RESULTS_DIR "../../results/"
+// #define RESULTS_DIR "../../results/4racks_2rows-2.7-directional/"
+#define RESULTS_DIR "../../results/8racks_3rows-2.7-directional/"
 
 static const double originLon = 0;
 static const double originLat = 0;
@@ -44,7 +46,9 @@ static const double originLat = 0;
 #define RACK_CENTER_Y .533
 #define RACK_X_SPACING .6
 #define RACK_Y_SPACING 2.4384
-#define ANTENNA_HEIGHT 2.3
+// #define RACK_Y_SPACING .6
+#define ANTENNA_HEIGHT 2.7 
+#define TRANS_PWR 0.0
 
 #define TX_T 1
 #define RX_T 2
@@ -88,16 +92,19 @@ remcom::rxapi::PointSetHandle createNode(double x, double y, double z, int id)
 void setAntennaType(remcom::rxapi::PointSetHandle node, int type)
 {
 
-    // remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
-    remcom::rxapi::HornHandle horn = createHornAntenna();
+    // remcom::rxapi::IsotropicHandle horn = createIsotropicAntenna();
+    // remcom::rxapi::ShortDipoleHandle horn = createAntenna();
+    // remcom::rxapi::HornHandle horn = createHornAntenna();
+    remcom::rxapi::DirectionalHandle horn = createDirectionalAntenna();
+    remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
 
     // create the receiver properties
     if(type == RX_T)
     {
+        // remcom::rxapi::IsotropicHandle iso = createIsotropicAntenna();
         remcom::rxapi::ReceiverHandle properties = remcom::rxapi::Receiver::New( );
         properties->setAntenna( horn );
-
-
+        // properties->setAntenna( iso );
 
         node->setReceiver( properties );
 
@@ -106,7 +113,8 @@ void setAntennaType(remcom::rxapi::PointSetHandle node, int type)
     {
         remcom::rxapi::TransmitterHandle properties = remcom::rxapi::Transmitter::New( );
         properties->setAntenna( horn );
-        properties->setInputPower(0.0);
+        // properties->setAntenna( iso );
+        properties->setInputPower(TRANS_PWR);
 
         node->setTransmitter( properties );
     }
@@ -119,7 +127,7 @@ void setAntennaType(remcom::rxapi::PointSetHandle node, int type)
 }
 
 
-void setTxAngle(remcom::rxapi::PointSetHandle node, double rx, double ry, double rz)
+void setTxAngle(remcom::rxapi::PointSetHandle &node, double rx, double ry, double rz)
 {        // zero out the antenna rotations
 
     node->getTransmitter()->getAntennaRotations( )->setX( remcom::rxapi::Vector< double >( 1, rx ) );
@@ -128,7 +136,7 @@ void setTxAngle(remcom::rxapi::PointSetHandle node, double rx, double ry, double
 
 }
 
-void setRxAngle(remcom::rxapi::PointSetHandle node, double rx, double ry, double rz)
+void setRxAngle(remcom::rxapi::PointSetHandle &node, double rx, double ry, double rz)
 {        // zero out the antenna rotations
 
     node->getReceiver()->getAntennaRotations( )->setX( remcom::rxapi::Vector< double >( 1, rx ) );
@@ -152,6 +160,8 @@ double calculateAngle(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::Point
 
     double dz = atan2(dy, dx) * 180.0 / PI;
     printf("dx: %f, dy: %f, dz: %f\n" , dx, dy, dz);// + 90.0);
+    dz = -1.0*dz;
+
     return dz;
 }
 
@@ -159,7 +169,9 @@ double calculateAngle(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::Point
 void pointRxAtTx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHandle y_node)
 {
     double dz =  calculateAngle(x_node, y_node);
-    setRxAngle(x_node, 0,0, dz);// + 90.0);
+    // setRxAngle(x_node, 0,0, dz);// + 90.0);
+    // setRxAngle(x_node, -1.0*dz,0, 0);// + 90.0);
+    setRxAngle(x_node, dz,0, 0);// + 90.0);
     // setRxAngle(x_node, 0, dz + 90.0, 0);
 }
 
@@ -167,7 +179,8 @@ void pointRxAtTx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHa
 void pointTxAtRx(remcom::rxapi::PointSetHandle x_node, remcom::rxapi::PointSetHandle y_node)
 {
     double dz =  calculateAngle(x_node, y_node);
-    setTxAngle(x_node, 0, 0, dz);// + 90.0);
+    // setTxAngle(x_node, -1.0*dz, 0,0);// + 90.0);
+    setTxAngle(x_node, dz, 0,0);// + 90.0);
     // setTxAngle(x_node, 0, dz + 90.0, 0);
 }
 
@@ -204,17 +217,16 @@ void executeJob(remcom::rxapi::X3DHandle &x3d,
     {
         progressReporter.reportError( job->getReasonWhyInvalid( ) );
     }
-    printf("Valid and running!!!!!!!!!!!!!!!!!\n");
 
     // at this point, the job is ready to run; it may be beneficial to serialize it to XML for viewing
-    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets.xml", false );
+    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "layout.xml", false );
 
     // job->execute( &progressReporter );
     job->execute( &progressReporter );
     // printf("DONE!!!!!!!!!\n");
 
     // // once the job has finished, it will be updated with output, which can also be serialized
-    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "rosslyn_streets_out.xml", false );
+    remcom::rxapi::Factory::instance( ).save( job, std::string(RESULTS_DIR) + "layout_out.xml", false );
 
     if( !(job->getOutput( )->isValid( )) )
     {
@@ -243,6 +255,39 @@ void createAntennas(remcom::rxapi::SceneHandle &scene,
             node_list.push_back(node);
         }
     }
+}
+
+void createAntennasTest(remcom::rxapi::SceneHandle &scene,
+                 vector<remcom::rxapi::PointSetHandle> &node_list,
+                 int angle)
+{
+
+    remcom::rxapi::PointSetHandle tx_node;
+    tx_node = createNode(0.0, 0, 7.0, 0);
+
+    setAntennaType(tx_node,  TX_T);
+    setTxAngle(tx_node, angle, 0,0);
+    node_list.push_back(tx_node);
+
+    double spacing = .1;
+    int num_rx = 100;
+    double y_offset = 2.5;
+    double start_x = (num_rx*spacing)/-2.0;
+    for(int i = 0; i < num_rx; i++) {
+        remcom::rxapi::PointSetHandle node;
+        node = createNode(start_x + (i*spacing), y_offset, 7.0, i+1);
+        printf("Node: %d, x_pos: %f\n", i+1, start_x + (i*spacing));
+        printPoint(getPosition(node));
+
+        setAntennaType(node,  RX_T);
+        setRxAngle(node, -90.0, 0, 0.0);
+        pointRxAtTx(node, tx_node);
+        node_list.push_back(node);
+
+    }
+
+    pointTxAtRx(tx_node, node_list[angle]);
+
 }
 
 
@@ -276,51 +321,75 @@ void addNodesToScene(vector<remcom::rxapi::PointSetHandle> &node_list,
 int main( int argc, char** argv )
 {
     static const int num_racks_per_row = 8;
-    static const int num_rows = 2;
+    static const int num_rows = 3;
+    char buffer [50];
 
     // a progress reporter must be instantiated and registered with the rxapi to provide error, warning, and progress messages
     remcom::rxapi::ProgressReporter progressReporter( NULL );
     remcom::rxapi::Factory::instance( ).setProgressReporter( progressReporter );
 
-    // create the scene
-    remcom::rxapi::SceneHandle scene = remcom::rxapi::Scene::New( );
+    remcom::rxapi::DirectionalHandle directional = remcom::rxapi::Directional::New( );
 
-    // set the scene's origin to match the Wireless InSite project's origin
-    scene->getOrigin( )->setLongitude( originLon );
-    scene->getOrigin( )->setLatitude( originLat );
+    // int tx_id = 11;
+    // int target_rx_id = 3;
+    for(int tx_id = 0; tx_id < num_racks_per_row*num_rows; tx_id++) 
+    {
+        for(int target_rx_id = 0; target_rx_id < num_racks_per_row*num_rows; target_rx_id++)
+        {
+            // for(int angle = 0; angle < 360; angle+=10) 
+            // for(int angle = 5; angle <= 100; angle+=5) 
+            if(tx_id != target_rx_id) 
+            {
 
-    // create geometry // add the rosslyn city - this is the city node itself, and we will assign its source next
-    remcom::rxapi::GeometryListHandle gL = remcom::rxapi::GeometryList::New( );
+                printf("--------------------------------------\n");
+                printf("Running Pair: %d - %d\n", tx_id, target_rx_id);
+                // printf("RUnning angle: %d\n", angle);
+                printf("--------------------------------------\n");
+                // create the scene
+                remcom::rxapi::SceneHandle scene = remcom::rxapi::Scene::New( );
 
-    remcom::rxapi::COLLADAHandle shape = addColladaFile(gL, remcom::rxapi::RString( std::string( DATA_DIR ) + "DataCenter_FS_6x64.dae" )) ;
-    scene->setGeometryList(gL);
+                // set the scene's origin to match the Wireless InSite project's origin
+                scene->getOrigin( )->setLongitude( originLon );
+                scene->getOrigin( )->setLatitude( originLat );
 
-    int tx_id = 11;
-    int target_rx_id = 3;
+                // create geometry // add the rosslyn city - this is the city node itself, and we will assign its source next
+                remcom::rxapi::GeometryListHandle gL = remcom::rxapi::GeometryList::New( );
 
-    vector<remcom::rxapi::PointSetHandle> node_list;
+                remcom::rxapi::COLLADAHandle shape = addColladaFile(gL, 
+                                                        remcom::rxapi::RString( std::string( DATA_DIR ) + "5rows_8racks.dae" )) ;
+                scene->setGeometryList(gL);
 
-    createAntennas(scene, node_list, num_rows, num_racks_per_row);
+                vector<remcom::rxapi::PointSetHandle> node_list;
 
-    aimAntennas(tx_id, target_rx_id, node_list);
+                createAntennas(scene, node_list, num_rows, num_racks_per_row);
+                aimAntennas(tx_id, target_rx_id, node_list);
+                // createAntennasTest(scene, node_list, angle);
+                // return 0;
 
-    addNodesToScene(node_list, scene);
+                addNodesToScene(node_list, scene);
 
-    // create an x3d study area
-    remcom::rxapi::X3DHandle x3d = remcom::rxapi::X3D::New( );
+                // create an x3d study area
+                remcom::rxapi::X3DHandle x3d = remcom::rxapi::X3D::New( );
 
-    // now that we have a full scene and a model to run, create a job and hook everything together
-    remcom::rxapi::JobHandle job = remcom::rxapi::Job::New( );
+                // now that we have a full scene and a model to run, create a job and hook everything together
+                remcom::rxapi::JobHandle job = remcom::rxapi::Job::New( );
 
-    // the x3d model uses an SQLite database to store its paths
-    remcom::rxapi::PathResultsDatabaseHandle database = remcom::rxapi::PathResultsDatabase::New( );
-  
-    executeJob(x3d, job, database, scene, progressReporter, "output.sql");
+                // the x3d model uses an SQLite database to store its paths
+                remcom::rxapi::PathResultsDatabaseHandle database = remcom::rxapi::PathResultsDatabase::New( );
+                
+                int n = sprintf(buffer, "output_%d_%d.sql", tx_id, target_rx_id); 
+                // int n = sprintf(buffer, "output_%d_%d.sql", 0, angle); 
+                string output_fn(buffer);
+                executeJob(x3d, job, database, scene, progressReporter, output_fn);
 
-    //write output to the console
-    for(int i = 0; i < node_list.size(); i++) {
-        writeAllChannelsToConsole( database, node_list[tx_id]->getOutputID( )->getValue( ), node_list[i]->getOutputID( )->getValue( ) );
+                //write output to the console
+                for(int i = 0; i < node_list.size(); i++) {
+                    writeAllChannelsToConsole( database, node_list[tx_id]->getOutputID( )->getValue( ), node_list[i]->getOutputID( )->getValue( ) );
+                }
+            }
+        }
     }
+   
 
     return 0;
 }

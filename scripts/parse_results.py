@@ -2,8 +2,8 @@ import numpy as np
 import sqlite3
 import argparse
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
-a = 5.
 
 def wattsToDB(watts):
     return 10. * np.log10(watts) + 30.
@@ -14,11 +14,18 @@ def DBtoWatts(db):
 def retreiveAllData(db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/results/rosslyn_streets.sql'):
     conn = sqlite3.connect(db_fn)
     c = conn.cursor()
+    # c.execute("SELECT * FROM channel_utd \
+    #                         JOIN channel \
+    #                         JOIN tx \
+    #                             WHERE channel_utd.channel_id = channel.channel_id \
+    #                             AND channel.tx_id = tx.tx_id;")
+
     c.execute("SELECT * FROM channel_utd \
                             JOIN channel \
-                            JOIN tx \
+                            JOIN rx \
                                 WHERE channel_utd.channel_id = channel.channel_id \
-                                AND channel.tx_id = tx.tx_id;")
+                                AND channel.rx_id = rx.rx_id;")
+
 
 
     return c.fetchall()
@@ -69,24 +76,57 @@ def plotAllTx(numTx, db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/res
     ax.grid(True)
 
 
-def plotTxRow(startidx=0, endidx=36, offset=7):
-    leg = []
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='polar')
-    for i in range(startidx,endidx,offset):
-        r = fetchTx(i, db_fn='/Users/mcrouse/Research/RandomizedMAC/raytracing/results/rosslyn_grid6x6.sql')
-        plotTx(r, fig, ax)
-        leg.append("[{}, {}]".format(r['x'], r['y']))
-    ax.legend(leg, loc='center left', bbox_to_anchor=(1, 0.5))
+def plotTx(db_fn='../results/output.sql', num_racks_per_row=8, num_racks=4, fig=None, ax=None):
 
-def plotTx(r, fig=None, ax=None):
+    r = retreiveAllData(db_fn=db_fn)
+    print r
+
+    tx_id = int(db_fn.split("_")[2]) + 1
+    target_rx_id = int(db_fn.split("_")[3].split(".")[0]) + 1
+    # print tx_id, target_rx_id
+    print len(r)
+
     if fig is None:
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='polar')
-    ax.plot(np.linspace(0, 2*np.pi, r['power'].shape[0]), r['power'])
-    ax.set_rmax(-20)
-    ax.set_rmin(np.min(r['power']))
-    ax.set_rticks(np.arange(-150,0,25))
-    ax.grid(True)
+        ax = fig.add_subplot(111)
 
+    xs = []
+    ys = []
+    rcv_dbs = []
+    legend = []
+    for row in r:
+        print row[1]
+        xs.append(row[-3])
+        ys.append(row[-2])
+        db = wattsToDB(row[3])
+        print row[1], xs[-1], ys[-1], db
+        rcv_dbs.append(wattsToDB(row[3]))
+        m = 's'
+        # cax =ax.scatter(row[-3], row[-2], c=db, marker='s', cmap=cm.jet)
+        if row[1] == target_rx_id:
+            target_x = row[-3]
+            target_y = row[-2]
+            # print "here: ", db
+            ax.plot(row[-3], row[-2], c='r', markersize=15, marker='o', zorder=1, mfc='none', linestyle = 'None')
+            legend.append('Target Rx')
+        if row[1] == tx_id:
+            target_x = row[-3]
+            target_y = row[-2]
+            print 'here'
+            ax.plot(row[-3], row[-2], c='b', markersize=15, marker='o', zorder=1, mfc='none', linestyle = 'None')
+            legend.append('Tx')
+
+    
+    cax = ax.scatter(xs, ys, c=rcv_dbs, cmap=cm.jet, marker='s', zorder=2, vmin=-250, vmax=0)
+    ax.grid(True)
+    cbar = fig.colorbar(cax)
+    cbar.set_label("Received Power (dBm)")
+    plt.xlabel('position (m)')
+    plt.ylabel('position (m)')
+    plt.title("Tx: %d - Target Rx: %d" % (tx_id, target_rx_id))
+    plt.legend(legend)
+    plt.xlim([0,5])
+    plt.ylim([-6,0])
+    # plt.axis('equal')
+    plt.show()
  

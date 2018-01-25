@@ -23,6 +23,7 @@
 #include <rxapischema/Terrain.h>
 #include <rxapischema/TxRxSetList.h>
 #include <rxapischema/X3D.h>
+#include <rxapischema/Directional.h>
 
 
 
@@ -40,4 +41,5 @@ remcom::rxapi::ShortDipoleHandle createAntenna();
 remcom::rxapi::HornHandle createHornAntenna(); 
 remcom::rxapi::IsotropicHandle createIsotropicAntenna(); 
 remcom::rxapi::OmnidirectionalHandle createOmniAntenna(); 
+remcom::rxapi::DirectionalHandle createDirectionalAntenna() ;
 

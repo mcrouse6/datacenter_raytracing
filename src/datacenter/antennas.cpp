@@ -71,7 +71,7 @@ remcom::rxapi::IsotropicHandle createIsotropicAntenna()
     remcom::rxapi::SinusoidHandle sinusoid = remcom::rxapi::Sinusoid::New( );
     sinusoid->setCarrierFrequency( 60.0e9 );  // frequency is specified in Hz
     //sinusoid->setCarrierFrequency( 2.4e9 ); // frequency is specified in Hz
-    sinusoid->setBandwidth( 500.0 );
+    sinusoid->setBandwidth( 1000.0 );
 
     iso->setWaveform( sinusoid );
     //iso->setGain(25.0);
@@ -131,6 +131,23 @@ remcom::rxapi::HornHandle createHornAntenna()
     horn->setFeedApertureLength(0.116);
     horn->setFeedApertureHeight(0.0073);
     horn->setFeedApertureWidth(0.0036);
+    horn->setGain(25.0);
+
+    return horn;
+    
+}
+
+remcom::rxapi::DirectionalHandle createDirectionalAntenna() 
+{
+    remcom::rxapi::DirectionalHandle horn = remcom::rxapi::Directional::New( );
+
+    remcom::rxapi::SinusoidHandle sinusoid = remcom::rxapi::Sinusoid::New( );
+    sinusoid->setCarrierFrequency( 60.0e9 );  // frequency is specified in Hz
+    sinusoid->setBandwidth( 1000.0 );
+
+    horn->setWaveform( sinusoid );
+    horn->setE_PlaneHalfPowerBeamwidth(6.0);
+    horn->setH_PlaneHalfPowerBeamwidth(6.0);
     horn->setGain(25.0);
 
     return horn;
